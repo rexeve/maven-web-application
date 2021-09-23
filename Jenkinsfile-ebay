@@ -1,0 +1,29 @@
+node {
+    def mavenHome = tool name: 'maven3.8.2'
+    stage('1. Clone') {
+        git credentialsId: 'github', url: 'https://github.com/rexeve/maven-web-application.git'
+    } 
+    stage('2. MavenBuild') {
+        sh "${mavenHome}/bin/mvn package"
+    }
+    stage('3. CodeQuality') {
+        sh "${mavenHome}/bin/mvn sonar:sonar"
+    }
+    stage('4. UploadArtifact') {
+        sh "${mavenHome}/bin/mvn deploy"
+    }
+    stage('5. TomcatDeploy') {
+        deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://172.31.19.99:8080/')], contextPath: null, onFailure: false, war: 'target/*.war'
+    }
+    stage('6. Email') {
+        emailext body: 'This is my build status', subject: 'build status', to: 'developers'
+    }
+    stage('7. Approval') {
+        timeout(time:8, unit: 'HOURS') {
+            input massage: 'Please verify and approve'
+        }
+    }
+    stage('5. TomcatDeploy') {
+        deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://172.31.19.99:8080/')], contextPath: null, onFailure: false, war: 'target/*.war'
+    }
+}
